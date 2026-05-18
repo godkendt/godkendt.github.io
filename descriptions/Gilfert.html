@@ -22,56 +22,81 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+
     <script>
-        // 2. Supabase Verbindung herstellen (Ersetze mit deinen echten Daten aus den Settings)
+        // 2. Deine Supabase-Verbindungsdaten
+        // Ersetze diese unbedingt mit deinen echten Schlüsseln!
         const SUPABASE_URL = "https://DEIN_PROJEKT_ID.supabase.co";
-        const SUPABASE_ANON_KEY = "DEIN_ANONYMER_PUBLIC_KEY"; // Dieser Key DARF im Quellcode stehen!
+        const SUPABASE_ANON_KEY = "DEIN_ANONYMER_PUBLIC_KEY";
         
-        const supabaseclient = supabaseclient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // --- DIE ENTSCHEIDENDE ÄNDERUNG ---
+        // Wir nennen deine Variable 'mySupabaseClient', damit sie NICHT 
+        // mit der globalen 'supabase'-Variable der Bibliothek kollidiert.
+        let mySupabaseClient;
 
-        // 3. ID dieser Route festlegen (Muss dem Dateinamen oder einer ID entsprechen)
-        const ROUTE_ID = "route1"; 
-
+        const ROUTE_ID = "Gilfert"; // ID dieser Route
         const likeBtn = document.getElementById('like-btn');
         const likeCountSpan = document.getElementById('like-count');
 
-        // Funktion: Aktuelle Likes aus der Datenbank laden
+        // 3. Initialisierungs-Funktion
+        function initSupabase() {
+            try {
+                // Wir nutzen 'mySupabaseClient'
+                mySupabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("Supabase Client erfolgreich initialisiert.");
+                loadLikes();
+                checkIfVoted();
+            } catch (err) {
+                console.error("Fehler bei der Supabase-Initialisierung. Vermutlich sind URL oder Key falsch:", err);
+                likeCountSpan.innerText = "Verbindungsfehler";
+                likeBtn.disabled = true;
+            }
+        }
+
+        // 4. Funktion: Aktuelle Likes aus der Datenbank laden
         async function loadLikes() {
-            const { data, error } = await supabaseclient
+            if (!mySupabaseClient) return;
+
+            const { data, error } = await mySupabaseClient
                 .from('route_likes')
                 .select('likes')
                 .eq('route_id', ROUTE_ID)
                 .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 bedeutet "Keine Zeile gefunden" (0 Likes)
-                console.error("Fehler beim Laden:", error);
+            if (error && error.code !== 'PGRST116') { // PGRST116 = keine Likes gefunden
+                console.error("Fehler beim Laden der Likes:", error);
                 likeCountSpan.innerText = "Fehler";
             } else {
                 likeCountSpan.innerText = data ? `${data.likes} Empfehlungen` : "0 Empfehlungen";
             }
         }
 
-        // Funktion: Bei Klick die "+1" Funktion in Supabase ausführen
+        // 5. Funktion: Bei Klick die "+1" SQL-Funktion in Supabase ausführen
         async function voteUp() {
-            likeBtn.disabled = true; // Button sperren, damit kein Spam entsteht
+            // Diese Funktion ist jetzt definitiv im globalen Scope definiert,
+            // solange initSupabase() nicht abstürzt.
+            if (!mySupabaseClient) {
+                console.error("voteUp abgebrochen: Supabase Client nicht bereit.");
+                return;
+            }
+
+            likeBtn.disabled = true; 
+            likeBtn.innerText = "Sende...";
             
-            // Ruft die in Schritt 1 erstellte SQL-Funktion auf
-            const { error } = await supabaseclient.rpc('increment_like', { target_route_id: ROUTE_ID });
+            const { error } = await mySupabaseClient.rpc('increment_like', { target_route_id: ROUTE_ID });
 
             if (error) {
                 console.error("Fehler beim Voten:", error);
                 likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
             } else {
-                // Likes nach erfolgreichem Eintrag direkt neu laden
                 await loadLikes();
-                // Optional: Im LocalStorage speichern, damit der User nach Neuladen nicht sofort wieder klicken kann
                 localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
                 checkIfVoted();
             }
         }
 
-        // Verhindert, dass der gleiche Browser mehrfach klickt (einfacher Schutz)
+        // 6. Funktion: Prüft LocalStorage
         function checkIfVoted() {
             if (localStorage.getItem(`voted_${ROUTE_ID}`)) {
                 likeBtn.disabled = true;
@@ -79,9 +104,8 @@
             }
         }
 
-        // Beim Laden der Seite ausführen
-        loadLikes();
-        checkIfVoted();
+        // Starte alles
+        initSupabase();
     </script>
 </body>
 </html>
