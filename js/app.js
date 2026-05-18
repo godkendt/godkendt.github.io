@@ -1,8 +1,8 @@
 // 1. Karte initialisieren
 const map = L.map('map').setView([51.1657, 10.4515], 6); // Zentriert auf Deutschland
 
-// 2. Tracestrack Topo Basemap hinzufügen (KORRIGIERT)
-L.tileLayer('https://{s}.tile.tracestrack.com/topo__light/{z}/{x}/{y}.png?key=41ac196b61f7f4000d20c861d54badbf', {
+// 2. Tracestrack Topo Basemap hinzufügen (Aktualisiertes Format)
+L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.webp?key=41ac196b61f7f4000d20c861d54badbf', {
     maxZoom: 18,
     attribution: '&copy; <a href="https://www.tracestrack.com/">Tracestrack</a>, OpenStreetMap contributors'
 }).addTo(map);
