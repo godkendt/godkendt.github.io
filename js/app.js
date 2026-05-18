@@ -7,6 +7,18 @@ L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.webp?key=41ac196b61
     attribution: '&copy; <a href="https://www.tracestrack.com/">Tracestrack</a>, OpenStreetMap contributors'
 }).addTo(map);
 
+// 2a. Hütten-Icon hinzufügen
+const hutIcon = L.icon({
+    iconUrl: 'images/haus.png',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+});
+
+L.marker([47.364109062135306, 11.83826193824273], { icon: hutIcon })
+    .addTo(map)
+    .bindPopup('Ferienhaus');
+
 // 3. Modal-Elemente selektieren
 const modalOverlay = document.getElementById('modal-overlay');
 const modalIframe = document.getElementById('modal-iframe');
