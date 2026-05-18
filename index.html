@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktive Feature-Karte</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Eigenes CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2>Karten-Informationen</h2>
+        <p>Willkommen auf der interaktiven Karte. Klicke auf die Linien oder Punkte, um detaillierte Informationen anzuzeigen.</p>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Modal / Vordergrundfenster (90% Breite/Höhe) -->
+    <div id="modal-overlay" class="hidden">
+        <div id="modal-content">
+            <button id="modal-close">&times;</button>
+            <iframe id="modal-iframe" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet GPX Plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+    <!-- Eigenes JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>

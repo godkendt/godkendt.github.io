@@ -1,0 +1,72 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#sidebar {
+    width: 300px;
+    padding: 200px 20px 20px 20px; /* Platzhalter für Styling */
+    padding: 20px;
+    background: #f8f9fa;
+    border-right: 1px solid #ccc;
+    z-index: 1000;
+}
+
+#map {
+    flex-grow: 1;
+    height: 100%;
+}
+
+/* Modal Overlay (Hintergrund) */
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Modal Content Box (90% w/h) */
+#modal-content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+#modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 10010;
+}
+
+#modal-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.hidden {
+    display: none !important;
+}
