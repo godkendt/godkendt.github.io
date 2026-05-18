@@ -26,6 +26,8 @@
     <script>
         // 2. Deine Supabase-Verbindungsdaten
         // Ersetze diese unbedingt mit deinen echten Schlüsseln!
+        // WICHTIG: In Supabase muss unter Projekt > Einstellungen > Auth > Autorisierte Ursprünge
+        // die Herkunft deiner Seite eingetragen sein (z. B. http://localhost:5500 oder https://deine-domain.de).
         const SUPABASE_URL = "https://kpicbgulkgflhidxhvgv.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwaWNiZ3Vsa2dmbGhpZHhodmd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMDM3NzYsImV4cCI6MjA5NDY3OTc3Nn0.UoMOeI0NXWNVS3FeLT8knL5-2eax9TaEfx8TcEfBvb8";
         
@@ -40,10 +42,18 @@
 
         // 3. Initialisierungs-Funktion
         function initSupabase() {
+            if (window.location.protocol === 'file:') {
+                console.error("Supabase kann nicht über file:// geladen werden.");
+                likeCountSpan.innerText = "Bitte lokal über http(s) starten (z. B. Live Server).";
+                likeBtn.disabled = true;
+                return;
+            }
+
             try {
                 // Wir nutzen 'mySupabaseClient'
                 mySupabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log("Supabase Client erfolgreich initialisiert.");
+                console.log("Supabase URL:", SUPABASE_URL);
                 loadLikes();
                 checkIfVoted();
             } catch (err) {
