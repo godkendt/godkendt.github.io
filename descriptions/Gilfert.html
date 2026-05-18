@@ -25,10 +25,10 @@
     
     <script>
         // 2. Supabase Verbindung herstellen (Ersetze mit deinen echten Daten aus den Settings)
-        const SUPABASE_URL = "https://kpicbgulkgflhidxhvgv.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwaWNiZ3Vsa2dmbGhpZHhodmd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMDM3NzYsImV4cCI6MjA5NDY3OTc3Nn0.UoMOeI0NXWNVS3FeLT8knL5-2eax9TaEfx8TcEfBvb8"; // Dieser Key DARF im Quellcode stehen!
+        const SUPABASE_URL = "https://DEIN_PROJEKT_ID.supabase.co";
+        const SUPABASE_ANON_KEY = "DEIN_ANONYMER_PUBLIC_KEY"; // Dieser Key DARF im Quellcode stehen!
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseclient = supabaseclient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // 3. ID dieser Route festlegen (Muss dem Dateinamen oder einer ID entsprechen)
         const ROUTE_ID = "route1"; 
@@ -38,7 +38,7 @@
 
         // Funktion: Aktuelle Likes aus der Datenbank laden
         async function loadLikes() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseclient
                 .from('route_likes')
                 .select('likes')
                 .eq('route_id', ROUTE_ID)
@@ -57,7 +57,7 @@
             likeBtn.disabled = true; // Button sperren, damit kein Spam entsteht
             
             // Ruft die in Schritt 1 erstellte SQL-Funktion auf
-            const { error } = await supabase.rpc('increment_like', { target_route_id: ROUTE_ID });
+            const { error } = await supabaseclient.rpc('increment_like', { target_route_id: ROUTE_ID });
 
             if (error) {
                 console.error("Fehler beim Voten:", error);
