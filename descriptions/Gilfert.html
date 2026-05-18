@@ -13,8 +13,11 @@
 </head>
 <body>
 
-    <h1>Wanderung durch das Elbsandsteingebirge</h1>
-    <p>Hier steht deine Routenbeschreibung...</p>
+    <h1>Wanderung auf den Gilfert</h1>
+    <p>Gipfel: 2503m, Start auf 1462m.</p> </n>
+    <img src=https://vcdn.bergfex.at/images/resized/profiles/detail/e78/11309d5f0ff5ca539cea450daf35be78.jpg>
+    <p>besonders ist, dass der Startpunkt mit dem Bus angefahren werden muss. <br> Die erste Abfahrt ab Fügen Schloss ist um 08:13 Uhr. <br> Die letzte Abfahrt ab Hochfügen Talstation ist 17:05 Uhr.. 
+    <br></p> 
 
     <div class="like-section">
         <button id="like-btn" onclick="voteUp()">👍 Route empfehlen (+1)</button>
@@ -77,33 +80,73 @@
                 console.error("Fehler beim Laden der Likes:", error);
                 likeCountSpan.innerText = "Fehler";
             } else {
-                likeCountSpan.innerText = data ? `${data.likes} Empfehlungen` : "0 Empfehlungen";
+                likeCountSpan.innerText = data ? `${data.likes} Likes` : "0 Likes";
             }
         }
 
         // 5. Funktion: Bei Klick die "+1" SQL-Funktion in Supabase ausführen
         async function voteUp() {
-            // Diese Funktion ist jetzt definitiv im globalen Scope definiert,
-            // solange initSupabase() nicht abstürzt.
             if (!mySupabaseClient) {
                 console.error("voteUp abgebrochen: Supabase Client nicht bereit.");
                 return;
             }
 
-            likeBtn.disabled = true; 
+            likeBtn.disabled = true;
             likeBtn.innerText = "Sende...";
-            
+
             const { error } = await mySupabaseClient.rpc('increment_like', { target_route_id: ROUTE_ID });
 
             if (error) {
-                console.error("Fehler beim Voten:", error);
+                console.error("Fehler beim Voten (RPC):", error);
+                if (error.code === 'PGRST202') {
+                    console.warn("RPC-Funktion nicht gefunden. Versuche Fallback-Update.");
+                    await voteUpFallback();
+                    return;
+                }
+
                 likeBtn.disabled = false;
                 likeBtn.innerText = "👍 Route empfehlen (+1)";
-            } else {
-                await loadLikes();
-                localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
-                checkIfVoted();
+                return;
             }
+
+            await loadLikes();
+            localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
+            checkIfVoted();
+        }
+
+        async function voteUpFallback() {
+            // Wenn die RPC-Funktion nicht vorhanden ist, erhöht dieser Fallback den Wert direkt.
+            const { data, error } = await mySupabaseClient
+                .from('route_likes')
+                .select('likes')
+                .eq('route_id', ROUTE_ID)
+                .single();
+
+            if (error) {
+                console.error("Fallback-Update: Fehler beim Laden des aktuellen Likes:", error);
+                likeCountSpan.innerText = "Fehler";
+                likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
+                return;
+            }
+
+            const nextLikes = (data?.likes || 0) + 1;
+            const { error: updateError } = await mySupabaseClient
+                .from('route_likes')
+                .update({ likes: nextLikes })
+                .eq('route_id', ROUTE_ID);
+
+            if (updateError) {
+                console.error("Fallback-Update: Fehler beim Aktualisieren der Likes:", updateError);
+                likeCountSpan.innerText = "Fehler";
+                likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
+                return;
+            }
+
+            await loadLikes();
+            localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
+            checkIfVoted();
         }
 
         // 6. Funktion: Prüft LocalStorage
