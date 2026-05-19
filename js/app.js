@@ -12,7 +12,7 @@ const hutIcon = L.icon({
     iconUrl: 'images/haus.png',
     // leave out iconSize so the browser uses the image's natural dimensions
     // this preserves the original aspect ratio and avoids stretching
-    popupAnchor: [0, -40]
+    popupAnchor: [0, -40],
     iconSize: [32, 32] // Optional: Größe des Icons anpassen, falls nötig
 });
 
