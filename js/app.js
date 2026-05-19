@@ -98,6 +98,13 @@ function error(err) {
 const locateBtn = document.getElementById('locate-btn');
 if (locateBtn) locateBtn.addEventListener('click', findeStandort);
 
+// Funktion für zufällige helle und sichtbare Farben
+function getRandomColor() {
+    const hue = Math.floor(Math.random() * 360);
+    // Sättigung 70-90%, Helligkeit 45-60% → lebendige, sichtbare Farben
+    return `hsl(${hue}, 80%, 50%)`;
+}
+
 // Funktion zum Öffnen des Modals basierend auf dem Dateinamen
 function openDescriptionModal(fileName) {
     // Extrahiert den reinen Namen ohne Endung (z.B. "route1.geojson" -> "route1")
@@ -125,13 +132,19 @@ fetch('data/features.json')
                         }).addTo(map);
                     });
             } else if (file.endsWith('.gpx')) {
-                // GPX laden mittels Plugin
+                // GPX laden mittels Plugin mit zufälliger Farbe
+                const randomColor = getRandomColor();
                 new L.GPX(fileUrl, {
                     async: true,
                     marker_options: {
-                        startIconUrl: null, // Verhindert standardmäßige Start/End-Pins falls nicht gewünscht
+                        startIconUrl: null,
                         endIconUrl: null,
                         shadowUrl: null
+                    },
+                    polyline_options: {
+                        color: randomColor,
+                        weight: 3,
+                        opacity: 0.8
                     }
                 }).on('loaded', function(e) {
                     // GPX-Tracks sind FeatureGroups, wir hängen den Klick-Event an die Gruppe
