@@ -13,6 +13,7 @@ const hutIcon = L.icon({
     // leave out iconSize so the browser uses the image's natural dimensions
     // this preserves the original aspect ratio and avoids stretching
     popupAnchor: [0, -40]
+    iconSize: [32, 32] // Optional: Größe des Icons anpassen, falls nötig
 });
 
 L.marker([47.364109062135306, 11.83826193824273], { icon: hutIcon })
@@ -23,7 +24,8 @@ L.marker([47.364109062135306, 11.83826193824273], { icon: hutIcon })
 const restaurantIcon = L.icon({
     iconUrl: 'images/restaurant.png',
     // leave out iconSize so the browser uses the image's natural dimensions
-    popupAnchor: [0, -30]
+    popupAnchor: [0, -30],
+    iconSize: [32, 32] // Optional: Größe des Icons anpassen, falls nötig
 });
 
 L.marker([47.31927815746927, 11.794698795777782], { icon: restaurantIcon })
