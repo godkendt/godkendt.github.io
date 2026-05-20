@@ -1,5 +1,7 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 // 1. Karte initialisieren
-const map = L.map('map').setView([51.1657, 10.4515], 6); // Zentriert auf Deutschland
+const map = L.map('map').setView([47.319, 11.839], 10); // Zentriert auf Deutschland
 
 // 2. Tracestrack Topo Basemap hinzufügen (Aktualisiertes Format)
 L.tileLayer('https://tile.tracestrack.com/topo__/{z}/{x}/{y}.webp?key=41ac196b61f7f4000d20c861d54badbf', {
