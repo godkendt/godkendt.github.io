@@ -1,4 +1,3 @@
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 // 1. Karte initialisieren
 const map = L.map('map').setView([47.319, 11.839], 10); // Zentriert auf Deutschland
