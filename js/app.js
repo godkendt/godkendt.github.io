@@ -47,6 +47,41 @@ modalClose.addEventListener('click', () => {
 // Sidebar toggle behavior: klappt die Sidebar ein/aus und passt die Karte an
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const sidebar = document.getElementById('sidebar');
+const routeList = document.getElementById('route-list');
+
+function formatRouteName(fileName) {
+    return fileName.split('.').slice(0, -1).join(' ');
+}
+
+function createRoutePane(index) {
+    const paneName = `routePane${index}`;
+    if (!map.getPane(paneName)) {
+        map.createPane(paneName);
+        map.getPane(paneName).style.zIndex = 600 + index;
+    }
+    return paneName;
+}
+
+function addRouteListEntry(fileName, bounds, color) {
+    if (!routeList) return;
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = formatRouteName(fileName);
+    button.style.border = 'none';
+    button.style.background = 'none';
+    button.style.color = color;
+    button.style.cursor = 'pointer';
+    button.style.padding = '0.2em 0';
+    button.style.textAlign = 'left';
+    button.addEventListener('click', () => {
+        if (bounds) map.fitBounds(bounds, { padding: [30, 30] });
+        openDescriptionModal(fileName);
+    });
+    item.appendChild(button);
+    routeList.appendChild(item);
+}
+
 if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
@@ -135,6 +170,8 @@ fetch('data/features.json')
             } else if (file.endsWith('.gpx')) {
                 // GPX laden mittels Plugin mit zufälliger Farbe
                 const randomColor = getRandomColor();
+                const paneName = createRoutePane(files.indexOf(file));
+
                 new L.GPX(fileUrl, {
                     async: true,
                     marker_options: {
@@ -143,13 +180,45 @@ fetch('data/features.json')
                         shadowUrl: null
                     },
                     polyline_options: {
+                        pane: paneName,
                         color: randomColor,
-                        weight: 3,
-                        opacity: 0.8
+                        weight: 4,
+                        opacity: 0.85
                     }
                 }).on('loaded', function(e) {
-                    // GPX-Tracks sind FeatureGroups, wir hängen den Klick-Event an die Gruppe
-                    e.target.on('click', () => openDescriptionModal(file));
+                    const gpxLayer = e.target;
+                    const bounds = gpxLayer.getBounds ? gpxLayer.getBounds() : null;
+                    const routeName = formatRouteName(file);
+
+                    gpxLayer.eachLayer(layer => {
+                        if (layer instanceof L.Polyline) {
+                            layer.setStyle({ color: randomColor, weight: 4, opacity: 0.85 });
+                            layer.on('click', () => openDescriptionModal(file));
+                            layer.bindTooltip(routeName, {
+                                direction: 'center',
+                                permanent: false,
+                                opacity: 0.8,
+                                className: 'route-tooltip'
+                            });
+
+                            const hitArea = L.polyline(layer.getLatLngs(), {
+                                pane: paneName,
+                                color: randomColor,
+                                weight: 18,
+                                opacity: 0,
+                                interactive: true
+                            }).addTo(map);
+                            hitArea.on('click', () => openDescriptionModal(file));
+                            if (typeof hitArea.bringToFront === 'function') {
+                                hitArea.bringToFront();
+                            }
+                        }
+                    });
+
+                    addRouteListEntry(file, bounds, randomColor);
+                    if (typeof gpxLayer.bringToFront === 'function') {
+                        gpxLayer.bringToFront();
+                    }
                 }).addTo(map);
             }
         });
