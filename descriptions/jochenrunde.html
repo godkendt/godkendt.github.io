@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Beschreibung</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .like-section { margin-top: 20px; display: flex; align-items: center; gap: 15px; }
+        button { padding: 10px 15px; font-size: 16px; cursor: pointer; background: #2ecc71; color: white; border: none; border-radius: 5px; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        #like-count { font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+    <h1>Runde über Spieljoch, Onkeljoch, Kellerjoch</h1>
+    <p>Gipfel: 2343m, Start am Ferienhaus.</p> </n>
+    <img src="https://images.alltrails.com/eyJidWNrZXQiOiJhc3NldHMuYWxsdHJhaWxzLmNvbSIsImtl eSI6InVwbG9hZHMvcGhvdG8vaW1hZ2UvMTI0MzE2NTU3LzkzOWVjYzc1MThmZjUxNDA3ODQxMzA4NTBmMGEyNGQyLmpwZyIsImVkaXRzIjp7InRvRm9ybWF0Ijoid2VicCIsInJlc2l6ZSI6eyJ3aWR0aCI6IjIwNDgiLCJoZWlnaHQiOiIyMDQ4IiwiZml0IjoiaW5zaWRlIn0sInJvdGF0ZSI6bnVsbCwianBlZyI6eyJ0cmVsbGlzUXVhbnRpc2F0aW9uIjp0cnVlLCJvdmVyc2hvb3REZXJpbmdpbmciOnRydWUsIm9wdGltaXNlU2NhbnMiOnRydWUsInF1YW50aXNhdGlvblRhYmxlIjozfX19" title="Onkeljoch" style="max-width: 50%; height: auto;">
+    <p>die tour ist aufgrund ihrer länge (25km) etwas anspruchsvoller. außerdme hat die tour insg. 1600 hm, <br> deshalb sollte genug zeit eingeplant werden. für mehr infos zur südtour links über "Kellerjoch" gehen. <br> auf dem weg gibt es viel gastro, bänke und seen, großer teil durch den wald über gebirgsbäche<br> der abschnitt am spieljoch ist relativ verbaut, wobei dieweiterer vorteil ist die teils gute sicht richtung westen, wodurch aufkommende gewitter früh erkannt werden können <br>es gibt lediglich eine etwas schwierigere stelle (T3) vor dem Kellerjoch, hier kann man sich jedoch gut festhalten (siehe Bild)</p>  </n> <img src="https://www.tourentipp.com/portal/storage/touren/gallery/kellerjoch_s15.jpg" title="Schlüsselstelle der tour, aber noch gut ohne kletterausrüstung machbar" style="max-width: 50%; height: auto;">
+    </n> <p> wie bereits in der südtour (gleich wer hin- & rücklängs) soll die markierte hütte auf dem abstieg empfehlenswert sein.</p>
+    <p></p>
+
+    <img src="images/jochenrunde.png" title="Jochenrunde" style="max-width: 50%; height: auto;">
+
+    <div class="like-section">
+        <button id="like-btn" onclick="voteUp()">👍+1</button>
+        <span id="like-count">Lade Likes...</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // 2. Deine Supabase-Verbindungsdaten
+        // Ersetze diese unbedingt mit deinen echten Schlüsseln!
+        // WICHTIG: In Supabase muss unter Projekt > Einstellungen > Auth > Autorisierte Ursprünge
+        // die Herkunft deiner Seite eingetragen sein (z. B. http://localhost:5500 oder https://deine-domain.de).
+        const SUPABASE_URL = "https://kpicbgulkgflhidxhvgv.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwaWNiZ3Vsa2dmbGhpZHhodmd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMDM3NzYsImV4cCI6MjA5NDY3OTc3Nn0.UoMOeI0NXWNVS3FeLT8knL5-2eax9TaEfx8TcEfBvb8";
+        
+        // --- DIE ENTSCHEIDENDE ÄNDERUNG ---
+        // Wir nennen deine Variable 'mySupabaseClient', damit sie NICHT 
+        // mit der globalen 'supabase'-Variable der Bibliothek kollidiert.
+        let mySupabaseClient;
+
+        const ROUTE_ID = "jochenrunde"; // ID dieser Route
+        const likeBtn = document.getElementById('like-btn');
+        const likeCountSpan = document.getElementById('like-count');
+
+        // 3. Initialisierungs-Funktion
+        function initSupabase() {
+            if (window.location.protocol === 'file:') {
+                console.error("Supabase kann nicht über file:// geladen werden.");
+                likeCountSpan.innerText = "Bitte lokal über http(s) starten (z. B. Live Server).";
+                likeBtn.disabled = true;
+                return;
+            }
+
+            try {
+                // Wir nutzen 'mySupabaseClient'
+                mySupabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("Supabase Client erfolgreich initialisiert.");
+                console.log("Supabase URL:", SUPABASE_URL);
+                loadLikes();
+                checkIfVoted();
+            } catch (err) {
+                console.error("Fehler bei der Supabase-Initialisierung. Vermutlich sind URL oder Key falsch:", err);
+                likeCountSpan.innerText = "Verbindungsfehler";
+                likeBtn.disabled = true;
+            }
+        }
+
+        // 4. Funktion: Aktuelle Likes aus der Datenbank laden
+        async function loadLikes() {
+            if (!mySupabaseClient) return;
+
+            const { data, error } = await mySupabaseClient
+                .from('route_likes')
+                .select('likes')
+                .eq('route_id', ROUTE_ID)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 = keine Likes gefunden
+                console.error("Fehler beim Laden der Likes:", error);
+                likeCountSpan.innerText = "Fehler";
+            } else {
+                likeCountSpan.innerText = data ? `${data.likes} Likes` : "0 Likes";
+            }
+        }
+
+        // 5. Funktion: Bei Klick die "+1" SQL-Funktion in Supabase ausführen
+        async function voteUp() {
+            if (!mySupabaseClient) {
+                console.error("voteUp abgebrochen: Supabase Client nicht bereit.");
+                return;
+            }
+
+            likeBtn.disabled = true;
+            likeBtn.innerText = "Sende...";
+
+            const { error } = await mySupabaseClient.rpc('increment_like', { target_route_id: ROUTE_ID });
+
+            if (error) {
+                console.error("Fehler beim Voten (RPC):", error);
+                if (error.code === 'PGRST202') {
+                    console.warn("RPC-Funktion nicht gefunden. Versuche Fallback-Update.");
+                    await voteUpFallback();
+                    return;
+                }
+
+                likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
+                return;
+            }
+
+            await loadLikes();
+            localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
+            checkIfVoted();
+        }
+
+        async function voteUpFallback() {
+            // Wenn die RPC-Funktion nicht vorhanden ist, erhöht dieser Fallback den Wert direkt.
+            const { data, error } = await mySupabaseClient
+                .from('route_likes')
+                .select('likes')
+                .eq('route_id', ROUTE_ID)
+                .single();
+
+            if (error) {
+                console.error("Fallback-Update: Fehler beim Laden des aktuellen Likes:", error);
+                likeCountSpan.innerText = "Fehler";
+                likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
+                return;
+            }
+
+            const nextLikes = (data?.likes || 0) + 1;
+            const { error: updateError } = await mySupabaseClient
+                .from('route_likes')
+                .update({ likes: nextLikes })
+                .eq('route_id', ROUTE_ID);
+
+            if (updateError) {
+                console.error("Fallback-Update: Fehler beim Aktualisieren der Likes:", updateError);
+                likeCountSpan.innerText = "Fehler";
+                likeBtn.disabled = false;
+                likeBtn.innerText = "👍 Route empfehlen (+1)";
+                return;
+            }
+
+            await loadLikes();
+            localStorage.setItem(`voted_${ROUTE_ID}`, 'true');
+            checkIfVoted();
+        }
+
+        // 6. Funktion: Prüft LocalStorage
+        function checkIfVoted() {
+            if (localStorage.getItem(`voted_${ROUTE_ID}`)) {
+                likeBtn.disabled = true;
+                likeBtn.innerText = "Bereits empfohlen ✔";
+            }
+        }
+
+        // Starte alles
+        initSupabase();
+    </script>
+</body>
+</html>

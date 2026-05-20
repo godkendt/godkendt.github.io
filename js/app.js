@@ -48,6 +48,8 @@ modalClose.addEventListener('click', () => {
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const sidebar = document.getElementById('sidebar');
 const routeList = document.getElementById('route-list');
+const routeLayers = [];
+const routeClickTolerancePx = 10;
 
 function formatRouteName(fileName) {
     return fileName.split('.').slice(0, -1).join(' ');
@@ -80,6 +82,97 @@ function addRouteListEntry(fileName, bounds, color) {
     });
     item.appendChild(button);
     routeList.appendChild(item);
+}
+
+function flattenLatLngs(latlngs) {
+    if (!Array.isArray(latlngs)) return [];
+    return latlngs.flatMap(item => {
+        if (item instanceof L.LatLng) return [item];
+        return flattenLatLngs(item);
+    });
+}
+
+function isPointNearPolyline(point, polyline, tolerancePx = routeClickTolerancePx) {
+    const latlngs = flattenLatLngs(polyline.getLatLngs());
+    if (latlngs.length < 2) return false;
+
+    const pointPx = map.latLngToLayerPoint(point);
+    for (let i = 0; i < latlngs.length - 1; i++) {
+        const a = map.latLngToLayerPoint(latlngs[i]);
+        const b = map.latLngToLayerPoint(latlngs[i + 1]);
+        const distance = L.LineUtil.pointToSegmentDistance(pointPx, a, b);
+        if (distance <= tolerancePx) return true;
+    }
+    return false;
+}
+
+function findRoutesAtLatLng(latlng) {
+    return routeLayers
+        .filter(route => route.layers.some(layer => isPointNearPolyline(latlng, layer)))
+        .sort((a, b) => b.order - a.order); // Topmost route first
+}
+
+function showRouteChoicePopup(latlng, matchingRoutes) {
+    const container = document.createElement('div');
+    const title = document.createElement('div');
+    title.textContent = 'Mehrere Strecken hier:';
+    title.style.fontWeight = 'bold';
+    title.style.marginBottom = '0.3em';
+    container.appendChild(title);
+
+    const list = document.createElement('ul');
+    list.style.listStyle = 'none';
+    list.style.padding = '0';
+    list.style.margin = '0';
+
+    matchingRoutes.forEach(route => {
+        const item = document.createElement('li');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = formatRouteName(route.file);
+        button.style.border = '1px solid #ccc';
+        button.style.background = route.color;
+        button.style.color = '#fff';
+        button.style.cursor = 'pointer';
+        button.style.marginBottom = '0.3em';
+        button.style.width = '100%';
+        button.style.padding = '0.35em 0.5em';
+        button.addEventListener('click', () => {
+            map.closePopup();
+            if (route.bounds) map.fitBounds(route.bounds, { padding: [30, 30] });
+            openDescriptionModal(route.file);
+        });
+        item.appendChild(button);
+        list.appendChild(item);
+    });
+
+    container.appendChild(list);
+
+    L.popup({
+        closeOnClick: true,
+        autoClose: true,
+        className: 'route-choice-popup'
+    })
+        .setLatLng(latlng)
+        .setContent(container)
+        .openOn(map);
+}
+
+function handleRouteClick(latlng, clickedRoute) {
+    const matchingRoutes = findRoutesAtLatLng(latlng);
+    if (matchingRoutes.length === 0) {
+        openDescriptionModal(clickedRoute.file);
+        return;
+    }
+
+    if (matchingRoutes.length === 1) {
+        const route = matchingRoutes[0];
+        if (route.bounds) map.fitBounds(route.bounds, { padding: [30, 30] });
+        openDescriptionModal(route.file);
+        return;
+    }
+
+    showRouteChoicePopup(latlng, matchingRoutes);
 }
 
 if (sidebarToggle && sidebar) {
@@ -153,7 +246,7 @@ function openDescriptionModal(fileName) {
 fetch('data/features.json')
     .then(response => response.json())
     .then(files => {
-        files.forEach(file => {
+        files.forEach((file, index) => {
             const fileUrl = `data/${file}`;
             
             if (file.endsWith('.geojson')) {
@@ -170,7 +263,16 @@ fetch('data/features.json')
             } else if (file.endsWith('.gpx')) {
                 // GPX laden mittels Plugin mit zufälliger Farbe
                 const randomColor = getRandomColor();
-                const paneName = createRoutePane(files.indexOf(file));
+                const routeOrder = index;
+                const paneName = createRoutePane(routeOrder);
+                const routeInfo = {
+                    file,
+                    bounds: null,
+                    color: randomColor,
+                    layers: [],
+                    order: routeOrder
+                };
+                routeLayers.push(routeInfo);
 
                 new L.GPX(fileUrl, {
                     async: true,
@@ -188,12 +290,14 @@ fetch('data/features.json')
                 }).on('loaded', function(e) {
                     const gpxLayer = e.target;
                     const bounds = gpxLayer.getBounds ? gpxLayer.getBounds() : null;
+                    routeInfo.bounds = bounds;
                     const routeName = formatRouteName(file);
 
                     gpxLayer.eachLayer(layer => {
                         if (layer instanceof L.Polyline) {
+                            routeInfo.layers.push(layer);
                             layer.setStyle({ color: randomColor, weight: 4, opacity: 0.85 });
-                            layer.on('click', () => openDescriptionModal(file));
+                            layer.on('click', e => handleRouteClick(e.latlng, routeInfo));
                             layer.bindTooltip(routeName, {
                                 direction: 'center',
                                 permanent: false,
@@ -201,6 +305,7 @@ fetch('data/features.json')
                                 className: 'route-tooltip'
                             });
 
+                            // Extra breites Klickfeld für die Route
                             const hitArea = L.polyline(layer.getLatLngs(), {
                                 pane: paneName,
                                 color: randomColor,
@@ -208,7 +313,7 @@ fetch('data/features.json')
                                 opacity: 0,
                                 interactive: true
                             }).addTo(map);
-                            hitArea.on('click', () => openDescriptionModal(file));
+                            hitArea.on('click', e => handleRouteClick(e.latlng, routeInfo));
                             if (typeof hitArea.bringToFront === 'function') {
                                 hitArea.bringToFront();
                             }
